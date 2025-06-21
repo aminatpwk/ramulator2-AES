@@ -1,6 +1,7 @@
 #ifndef RAMULATOR_AES_ENGINE_H
 #define RAMULATOR_AES_ENGINE_H
 
+#pragma once
 #include <vector>
 #include <cstdint>
 #include <array>

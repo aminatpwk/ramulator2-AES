@@ -1,6 +1,7 @@
 #ifndef RAMULATOR_AES_CONFIG_H
 #define RAMULATOR_AES_CONFIG_H
 
+#pragma once
 #include <vector>
 #include <string>
 

@@ -1,6 +1,7 @@
 #ifndef RAMULATOR_AES_ENCRYPTION_PLUGIN_H
 #define RAMULATOR_AES_ENCRYPTION_PLUGIN_H
 
+#pragma once
 #include "base/base.h"
 #include "dram_controller/plugin.h"
 #include "aes_engine.h"
@@ -73,7 +74,7 @@ namespace Ramulator {
         }
 
         void dumpStatistics() const;
-        bool selfTest();
+        // bool selfTest();
     };
 }
 #endif
