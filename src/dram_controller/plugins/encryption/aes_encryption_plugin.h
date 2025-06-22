@@ -2,11 +2,14 @@
 #define RAMULATOR_AES_ENCRYPTION_PLUGIN_H
 
 #pragma once
-#include "base/base.h"
-#include "dram_controller/plugin.h"
+#include "../../../base/base.h"
+#include "../../../dram_controller/plugin.h"
 #include "aes_engine.h"
 
 namespace Ramulator {
+    struct Request;
+    class IControllerPlugin;
+
     class AESEncryptionPlugin : public IControllerPlugin {
         RAMULATOR_REGISTER_IMPLEMENTATION(IControllerPlugin, AESEncryptionPlugin,"AESEncryption", "AES encryption/decryption plugin for memory controller");
     private:
@@ -38,10 +41,10 @@ namespace Ramulator {
         AESEncryptionPlugin() = default;
         ~AESEncryptionPlugin() = default;
 
-        void init() override;
-        void setup(IFrontEnd* frontend, IMemorySystem* memory_system) override;
+        void init();
+        void setup(IFrontEnd* frontend, IMemorySystem* memory_system);
         void update(bool request_found, ReqBuffer::iterator& req_it) override;
-        void finalize() override;
+        void finalize();
 
         bool setEncryptionKey(const std::vector<uint8_t>& key);
         bool setEncryptionKey(const uint8_t* key, int key_size);

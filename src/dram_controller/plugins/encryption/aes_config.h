@@ -2,6 +2,7 @@
 #define RAMULATOR_AES_CONFIG_H
 
 #pragma once
+#include <cstdint>
 #include <vector>
 #include <string>
 

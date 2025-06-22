@@ -4,7 +4,6 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-#include <array>
 
 namespace Ramulator {
     constexpr int AES_BLOCK_SIZE = 16; //(128 bits)
@@ -42,9 +41,12 @@ namespace Ramulator {
 
         uint8_t gf_mul(uint8_t a, uint8_t b);
 
-        void bytesToState(const uint8_t* input, uint8_t* state[4][4]);
-        void stateToBytes(const uint8_t* state[4][4], uint8_t* output);
+        void bytesToState(const uint8_t* input, uint8_t state[4][4]);
+        void stateToBytes(const uint8_t state[4][4], uint8_t* output);
         uint32_t bytesToWord(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3);
+
+        void handleWrite(Addr_t addr);
+        void handleRead(Addr_t addr);
 
     public:
         AESEngine();
