@@ -115,7 +115,7 @@ namespace Ramulator {
 
         addRoundKey(state, &m_expanded_keys[m_params.Nr * m_params.Nb]);
 
-        for (int round = m_params.Nr - 1; round >= 0; round--) {
+        for (int round = m_params.Nr - 1; round >= 1; round--) {
             invShiftRow(state);
             invSubBytes(state);
             addRoundKey(state, &m_expanded_keys[round * m_params.Nb]);
@@ -229,7 +229,7 @@ namespace Ramulator {
     }
 
     uint8_t Ramulator::AESEngine::gf_mul(uint8_t a, uint8_t b) {
-        uint8_t result;
+        uint8_t result = 0;
         uint8_t high_bit;
         for (int i = 0; i < 8; i++) {
             if (b&1) {

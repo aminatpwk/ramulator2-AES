@@ -1,5 +1,6 @@
 #include "../aes_config.h"
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <random>
 
@@ -12,6 +13,7 @@ namespace Ramulator {
     bool Ramulator::AESConfig::loadFromFile(const std::string& config_file, EncryptionSettings& settings) {
         std::ifstream file(config_file);
         if (!file.is_open()) {
+            std::cerr << "AESConfig: Failed to open config file: " << config_file << std::endl;
             return false;
         }
 
@@ -27,6 +29,8 @@ namespace Ramulator {
                     uint8_t byte = static_cast<uint8_t>(std::stoul(byte_str, nullptr, 16));
                     settings.key.push_back(byte);
                 }
+            }else if (line.find("encrypt_write="==0)) {
+                settings.encrypt_writes = (line.substr(15)=="true");
             }
         }
 
@@ -60,4 +64,3 @@ namespace Ramulator {
         return std::make_unique<AESEncryptionPlugin>();
     }
 }
-#endif
