@@ -3,14 +3,13 @@
 #include <iostream>
 #include <memory>
 #include <random>
-
+#include "dram_controller/plugins/encryption/impl/aes_encryption_plugin.cpp"
 #include "dram_controller/plugin.h"
 #include "dram_controller/plugins/encryption/aes_engine.h"
-
+#include "base/factory.h"
 namespace Ramulator {
-    class AESEncryptionPlugin;
 
-    bool Ramulator::AESConfig::loadFromFile(const std::string& config_file, EncryptionSettings& settings) {
+    bool AESConfig::loadFromFile(const std::string& config_file, EncryptionSettings& settings) {
         std::ifstream file(config_file);
         if (!file.is_open()) {
             std::cerr << "AESConfig: Failed to open config file: " << config_file << std::endl;
@@ -37,7 +36,7 @@ namespace Ramulator {
         return validateKey(settings.key);
     }
 
-    bool Ramulator::AESConfig::validateKey(const std::vector<uint8_t>& key) {
+    bool AESConfig::validateKey(const std::vector<uint8_t>& key) {
         return key.size() == AES_KEY_SIZE_128 || key.size() == AES_KEY_SIZE_192 || key.size() == AES_KEY_SIZE_256;
     }
 
@@ -47,7 +46,7 @@ namespace Ramulator {
      * @param key_size
      * @return
      */
-    std::vector<uint8_t> Ramulator::AESConfig::generateRandomKey(int key_size) {
+    std::vector<uint8_t> AESConfig::generateRandomKey(int key_size) {
         std::vector<uint8_t> key(key_size);
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -60,7 +59,16 @@ namespace Ramulator {
         return key;
     }
 
-    std::unique_ptr<IControllerPlugin> create_aes_encryption_plugin() {
-        return std::make_unique<AESEncryptionPlugin>();
+    std::unique_ptr<IControllerPlugin> create_aes_encryption_plugin(const YAML::Node& config, Implementation* parent) {
+        using namespace Ramulator;
+        Implementation* impl = Factory::create_implementation("ControllerPlugin", "AESEncryption", config, parent);
+        auto* plugin = dynamic_cast<IControllerPlugin*>(impl);
+
+        if (!plugin) {
+            throw std::runtime_error("Failed to create AESEncryptionPlugin");
+        }
+
+        return std::unique_ptr<IControllerPlugin>(plugin);
     }
+
 }

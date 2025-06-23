@@ -7,12 +7,9 @@
 #include "aes_engine.h"
 
 namespace Ramulator {
-    struct Request;
-    class IControllerPlugin;
 
-    class AESEncryptionPlugin : public IControllerPlugin {
-        RAMULATOR_REGISTER_IMPLEMENTATION(IControllerPlugin, AESEncryptionPlugin,"AESEncryption", "AES encryption/decryption plugin for memory controller");
-    private:
+    class IAESEncryptionPlugin {
+    protected:
         AESEngine m_aes_engine;
 
         bool m_encryption_enabled;
@@ -38,12 +35,13 @@ namespace Ramulator {
         void updateStats(bool is_encrypt, size_t bytes, uint64_t cycles);
 
     public:
-        AESEncryptionPlugin() = default;
-        ~AESEncryptionPlugin() = default;
+        IAESEncryptionPlugin(const YAML::Node& config, Implementation* parent);
+        IAESEncryptionPlugin() = default;
+        ~IAESEncryptionPlugin() = default;
 
         void init();
         void setup(IFrontEnd* frontend, IMemorySystem* memory_system);
-        void update(bool request_found, ReqBuffer::iterator& req_it) override;
+        void update(bool request_found, ReqBuffer::iterator& req_it);
         void finalize();
 
         bool setEncryptionKey(const std::vector<uint8_t>& key);

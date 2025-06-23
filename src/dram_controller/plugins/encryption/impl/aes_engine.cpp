@@ -48,7 +48,7 @@ namespace Ramulator {
         m_params.Nb = 4;
     }
 
-    bool Ramulator::AESEngine::initialize(const uint8_t* key, int key_size) {
+    bool AESEngine::initialize(const uint8_t* key, int key_size) {
         switch (key_size) {
             case AES_KEY_SIZE_128:
                 m_params.Nk = 4;
@@ -76,11 +76,11 @@ namespace Ramulator {
         }
     }
 
-    bool Ramulator::AESEngine::initialize(const std::vector<uint8_t>& key) {
+    bool AESEngine::initialize(const std::vector<uint8_t>& key) {
         return initialize(key.data(), key.size());
     }
 
-    bool Ramulator::AESEngine::encrypt(const uint8_t* input, uint8_t* output) {
+    bool AESEngine::encrypt(const uint8_t* input, uint8_t* output) {
         if (!m_initialized) {
             return false;
         }
@@ -105,7 +105,7 @@ namespace Ramulator {
         return true;
     }
 
-    bool Ramulator::AESEngine::decrypt(const uint8_t* input, uint8_t* output) {
+    bool AESEngine::decrypt(const uint8_t* input, uint8_t* output) {
         if (!m_initialized) {
             return false;
         }
@@ -130,7 +130,7 @@ namespace Ramulator {
         return true;
     }
 
-    void Ramulator::AESEngine::subBytes(uint8_t state[4][4]) {
+    void AESEngine::subBytes(uint8_t state[4][4]) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 state[i][j] = S_BOX[state[i][j]];
@@ -138,7 +138,7 @@ namespace Ramulator {
         }
     }
 
-    void Ramulator::AESEngine::invSubBytes(uint8_t state[4][4]) {
+    void AESEngine::invSubBytes(uint8_t state[4][4]) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 state[i][j] = INV_S_BOX[state[i][j]];
@@ -146,7 +146,7 @@ namespace Ramulator {
         }
     }
 
-    void Ramulator::AESEngine::shiftRow(uint8_t state[4][4]) {
+    void AESEngine::shiftRow(uint8_t state[4][4]) {
         uint8_t temp;
 
         temp = state[1][0];
@@ -169,7 +169,7 @@ namespace Ramulator {
         state[3][1] = temp;
     }
 
-    void Ramulator::AESEngine::invShiftRow(uint8_t state[4][4]) {
+    void AESEngine::invShiftRow(uint8_t state[4][4]) {
         uint8_t temp;
 
         temp = state[1][3];
@@ -192,7 +192,7 @@ namespace Ramulator {
         state[3][3] = temp;
     }
 
-    void Ramulator::AESEngine::mixColumn(uint8_t state[4][4]) {
+    void AESEngine::mixColumn(uint8_t state[4][4]) {
         for (int c = 0; c < 4; c++) {
             uint8_t temp_col[4];
             for (int i= 0; i<4; i++) {
@@ -206,7 +206,7 @@ namespace Ramulator {
         }
     }
 
-    void Ramulator::AESEngine::invMixColumn(uint8_t state[4][4]) {
+    void AESEngine::invMixColumn(uint8_t state[4][4]) {
         for (int c = 0; c < 4; c++) {
             uint8_t temp_col[4];
             for (int i = 0; i < 4; i++) {
@@ -220,7 +220,7 @@ namespace Ramulator {
         }
     }
 
-    void Ramulator::AESEngine::addRoundKey(uint8_t state[4][4], const uint32_t* round_key) {
+    void AESEngine::addRoundKey(uint8_t state[4][4], const uint32_t* round_key) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 state[i][j] ^= (round_key[j] >> (24-8*i)) & 0xFF;
@@ -228,7 +228,7 @@ namespace Ramulator {
         }
     }
 
-    uint8_t Ramulator::AESEngine::gf_mul(uint8_t a, uint8_t b) {
+    uint8_t AESEngine::gf_mul(uint8_t a, uint8_t b) {
         uint8_t result = 0;
         uint8_t high_bit;
         for (int i = 0; i < 8; i++) {
@@ -245,7 +245,7 @@ namespace Ramulator {
         return result;
     }
 
-    void Ramulator::AESEngine::keyExpansion(const uint8_t* key, int key_size) {
+    void AESEngine::keyExpansion(const uint8_t* key, int key_size) {
         int total_words = m_params.Nb * (m_params.Nr + 1);
         m_expanded_keys.resize(total_words);
 
@@ -267,18 +267,18 @@ namespace Ramulator {
         }
     }
 
-    uint32_t Ramulator::AESEngine::subWord(uint32_t word) {
+    uint32_t AESEngine::subWord(uint32_t word) {
         return (S_BOX[(word >> 24) & 0xFF] << 24) |
                (S_BOX[(word >> 16) & 0xFF] << 16) |
                (S_BOX[(word >> 8) & 0xFF] << 8) |
                S_BOX[word & 0xFF];
     }
 
-    uint32_t Ramulator::AESEngine::rotateWord(uint32_t word) {
+    uint32_t AESEngine::rotateWord(uint32_t word) {
         return (word << 8) | (word >> 24);
     }
 
-    void Ramulator::AESEngine::bytesToState(const uint8_t* input, uint8_t state[4][4]) {
+    void AESEngine::bytesToState(const uint8_t* input, uint8_t state[4][4]) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 state[i][j] = input[i + 4 * j];
@@ -286,7 +286,7 @@ namespace Ramulator {
         }
     }
 
-    void Ramulator::AESEngine::stateToBytes(const uint8_t state[4][4], uint8_t* output) {
+    void AESEngine::stateToBytes(const uint8_t state[4][4], uint8_t* output) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 output[i + 4 * j] = state[i][j];
@@ -294,29 +294,29 @@ namespace Ramulator {
         }
     }
 
-    uint32_t Ramulator::AESEngine::bytesToWord(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
+    uint32_t AESEngine::bytesToWord(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
         return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
     }
 
-    bool Ramulator::AESEngine::encryptBlock(const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+    bool AESEngine::encryptBlock(const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
         if (input.size() != AES_BLOCK_SIZE) return false;
 
         output.resize(AES_BLOCK_SIZE);
         return encrypt(input.data(), output.data());
     }
 
-    bool Ramulator::AESEngine::decryptBlock(const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
+    bool AESEngine::decryptBlock(const std::vector<uint8_t>& input, std::vector<uint8_t>& output) {
         if (input.size() != AES_BLOCK_SIZE) return false;
 
         output.resize(AES_BLOCK_SIZE);
         return decrypt(input.data(), output.data());
     }
 
-    int Ramulator::AESEngine::getKeySize() const {
+    int AESEngine::getKeySize() const {
         if (!m_initialized) return 0;
         return m_params.Nk * 4;
     }
 
 
 }
-#endif
+

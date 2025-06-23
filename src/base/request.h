@@ -38,6 +38,10 @@ struct Request {
 
   void* m_payload = nullptr;    // Point to a generic payload
 
+  void* data_ptr = nullptr;
+  size_t size = 0;
+
+
   Request(Addr_t addr, int type);
   Request(AddrVec_t addr_vec, int type);
   Request(Addr_t addr, int type, int source_id, std::function<void(Request&)> callback);

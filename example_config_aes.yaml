@@ -3,7 +3,7 @@ Frontend:
   clock_ratio: 8
   num_expected_insts: 500000
   traces:
-    -example_inst.trace
+    - example_inst.trace
   Translation:
     impl: RandomTranslation
     max_addr: 2147483648
@@ -32,10 +32,10 @@ MemorySystem:
       cap: 4
     plugins:
       - ControllerPlugin:
-          impl: AESEncrytion
-          key: "00112233445566778899AABBCCDDEEFF"
-          encrypt_on_write: true
-          decryp_on_read: true
+          impl: AESEncryption
+#          key: "00112233445566778899AABBCCDDEEFF"
+#          encrypt_on_write: true
+#          decrypt_on_read: true
 
   AddrMapper:
-    impl:RoBaRaCoCh
+    impl: RoBaRaCoCh

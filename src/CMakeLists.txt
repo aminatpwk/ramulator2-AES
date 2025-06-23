@@ -9,6 +9,6 @@ add_subdirectory(dram_controller)
 
 target_sources(
   ramulator-exe
-  PRIVATE 
+  PRIVATE
   main.cpp
 )

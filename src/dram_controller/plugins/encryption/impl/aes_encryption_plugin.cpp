@@ -1,14 +1,29 @@
 #include "../aes_encryption_plugin.h"
+#include <chrono>
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-
+#include "base/factory.h"
 #include "dram_controller/plugins/encryption/aes_config.h"
 #include "frontend/frontend.h"
+#include "dram_controller/plugins/encryption/aes_encryption_plugin.h"
 
 namespace Ramulator {
-    void Ramulator::AESEncryptionPlugin::init() {
+
+    class AESEncryptionPlugin;
+
+    // static bool _force_registration = [](){
+    //     return Factory::register_implementation<IControllerPlugin, AESEncryptionPlugin>(
+    //         IControllerPlugin::get_name(), "AESEncryption", "AESEncryption"
+    //     );
+    // }();
+
+    class AESEncryptionPlugin : public IControllerPlugin, public Implementation, public IAESEncryptionPlugin {
+        RAMULATOR_REGISTER_IMPLEMENTATION(IControllerPlugin, AESEncryptionPlugin, "AESEncryption", "AESEncryption")
+
+
+    void init() {
         m_encryption_enabled = false;
         m_decrypt_on_read = true;
         m_encrypt_on_write = true;
@@ -23,52 +38,66 @@ namespace Ramulator {
         loadKeyFromConfig();
     }
 
-    void Ramulator::AESEncryptionPlugin::setup(IFrontEnd* frontend, IMemorySystem* memory_system) {
+    void setup(IFrontEnd* frontend, IMemorySystem* memory_system) {
 
     }
 
-    void Ramulator::AESEncryptionPlugin::update(bool request_found, ReqBuffer::iterator& req_it) {
+    void update(bool request_found, ReqBuffer::iterator& req_it) {
         if (!m_encryption_enabled || !request_found) {
             return;
         }
 
         auto& req = *req_it;
+        std::cout << "[AES Plugin] Processing request - Type: "
+                  << (req.type_id == Request::Type::Read ? "Read" : "Write")
+                  << ", Addr: 0x" << std::hex << req.addr << std::dec
+                  << ", Size: " << req.size << " bytes" << std::endl;
+
+        if (req.data_ptr) {
+            std::cout << "Data before operation: ";
+            printHexDump(static_cast<uint8_t*>(req.data_ptr), std::min(req.size, static_cast<size_t>(16))); // Print first 16 bytes
+        }
+
         auto start_time = std::chrono::high_resolution_clock::now();
 
         try {
             if (req.type_id == Request::Type::Read && m_decrypt_on_read && isDecryptionRequired(req)) {
-                if (req.data_ptr && req.size > 0) {
-                    bool success = decryptData(static_cast<uint8_t*>(req.data_ptr), req.size);
-                    if (success) {
-                        auto end_time = std::chrono::high_resolution_clock::now();
-                        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
-                        updateStats(false, req.size, duration.count());
-                    }
+                std::cout << "[AES Plugin] Decrypting read data..." << std::endl;
+                bool success = decryptData(static_cast<uint8_t*>(req.data_ptr), req.size);
+                if (success && req.data_ptr) {
+                    std::cout << "Data after decryption: ";
+                    printHexDump(static_cast<uint8_t*>(req.data_ptr), std::min(req.size, static_cast<size_t>(16)));
                 }
             }
 
             if (req.type_id == Request::Type::Write && m_encrypt_on_write && isEncryptionRequired(req)) {
-                if (req.data_ptr && req.size > 0) {
-                    bool success = encryptData(static_cast<uint8_t*>(req.data_ptr), req.size);
-                    if (success) {
-                        auto end_time = std::chrono::high_resolution_clock::now();
-                        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
-                        updateStats(true, req.size, duration.count());
-                    }
+                std::cout << "[AES Plugin] Encrypting write data..." << std::endl;
+                bool success = encryptData(static_cast<uint8_t*>(req.data_ptr), req.size);
+                if (success && req.data_ptr) {
+                    std::cout << "Data after encryption: ";
+                    printHexDump(static_cast<uint8_t*>(req.data_ptr), std::min(req.size, static_cast<size_t>(16)));
                 }
             }
-        } catch (const AESException& e) {
+        } catch (const std::exception& e) {
             std::cerr << "AES Plugin Error: " << e.what() << std::endl;
         }
     }
 
-    void Ramulator::AESEncryptionPlugin::finalize() {
+    // Helper function to print hex data
+    void printHexDump(uint8_t* data, size_t len) {
+        for (size_t i = 0; i < len; i++) {
+            printf("%02X ", data[i]);
+        }
+        printf("\n");
+    }
+
+    void finalize() {
         if (m_encryption_enabled) {
             dumpStatistics();
         }
     }
 
-    bool Ramulator::AESEncryptionPlugin::setEncryptionKey(const std::vector<uint8_t>& key) {
+    bool setEncryptionKey(const std::vector<uint8_t>& key) {
         if (!AESConfig::validateKey(key)) {
             return false;
         }
@@ -80,24 +109,24 @@ namespace Ramulator {
         return success;
     }
 
-    bool Ramulator::AESEncryptionPlugin::setEncryptionKey(const uint8_t* key, int key_size) {
+    bool setEncryptionKey(const uint8_t* key, int key_size) {
         std::vector<uint8_t> key_vec(key, key + key_size);
         return setEncryptionKey(key_vec);
     }
 
-    void Ramulator::AESEncryptionPlugin::enableEncryption(bool enable) {
+    void enableEncryption(bool enable) {
         m_encryption_enabled = enable && m_aes_engine.isInitialized();
     }
 
-    void Ramulator::AESEncryptionPlugin::enableDecryptionOnRead(bool enable) {
+    void enableDecryptionOnRead(bool enable) {
         m_decrypt_on_read = enable;
     }
 
-    void Ramulator::AESEncryptionPlugin::enableEncryptionOnWrite(bool enable) {
+    void enableEncryptionOnWrite(bool enable) {
         m_encrypt_on_write = enable;
     }
 
-    bool Ramulator::AESEncryptionPlugin::encryptData(uint8_t* data, size_t size) {
+    bool encryptData(uint8_t* data, size_t size) {
         if (!m_aes_engine.isInitialized() || !data || size == 0) {
             return false;
         }
@@ -131,7 +160,7 @@ namespace Ramulator {
         return true;
     }
 
-    bool Ramulator::AESEncryptionPlugin::decryptData(uint8_t* data, size_t size) {
+    bool decryptData(uint8_t* data, size_t size) {
         if (!m_aes_engine.isInitialized() || !data || size == 0) {
             return false;
         }
@@ -165,15 +194,15 @@ namespace Ramulator {
         return true;
     }
 
-    bool Ramulator::AESEncryptionPlugin::isEncryptionRequired(const Request& req) {
+    bool isEncryptionRequired(const Request& req) {
         return true;
     }
 
-    bool Ramulator::AESEncryptionPlugin::isDecryptionRequired(const Request& req) {
+    bool isDecryptionRequired(const Request& req) {
         return true;
     }
 
-    void Ramulator::AESEncryptionPlugin::updateStats(bool is_encrypt, size_t bytes, uint64_t cycles) {
+    void updateStats(bool is_encrypt, size_t bytes, uint64_t cycles) {
         if (is_encrypt) {
             m_encrypt_operations++;
             m_total_bytes_encrypted += bytes;
@@ -185,14 +214,14 @@ namespace Ramulator {
         }
     }
 
-    void Ramulator::AESEncryptionPlugin::parseConfig() {
+    void parseConfig() {
         const char* enable_env = std::getenv("AES_PLUGIN_ENABLE");
         if (enable_env && std::string(enable_env) == "1") {
             m_encryption_enabled = true;
         }
     }
 
-    bool Ramulator::AESEncryptionPlugin::loadKeyFromConfig() {
+    bool loadKeyFromConfig() {
         const char* key_env = std::getenv("AES_PLUGIN_KEY");
         if (key_env) {
             std::string key_str(key_env);
@@ -221,15 +250,15 @@ namespace Ramulator {
         return false;
     }
 
-    double Ramulator::AESEncryptionPlugin::getAverageEncryptionCycles() const {
+    double getAverageEncryptionCycles() const {
         return m_encrypt_operations > 0 ? static_cast<double>(m_encryption_cycles) / m_encrypt_operations : 0.0;
     }
 
-    double Ramulator::AESEncryptionPlugin::getAverageDecryptionCycles() const {
+    double getAverageDecryptionCycles() const {
         return m_decrypt_operations > 0 ? static_cast<double>(m_decryption_cycles) / m_decrypt_operations : 0.0;
     }
 
-    void Ramulator::AESEncryptionPlugin::dumpStatistics() const {
+    void dumpStatistics() const {
         std::cout << "Encryption Plugin Statistics" << std::endl;
         std::cout << "Encryption Operations: " << m_encrypt_operations << std::endl;
         std::cout << "Decryption Operations: " << m_decrypt_operations << std::endl;
@@ -279,6 +308,7 @@ namespace Ramulator {
     //     return decrypted == test_plain;
     // }
 
+    };
+
 }
-#endif
 

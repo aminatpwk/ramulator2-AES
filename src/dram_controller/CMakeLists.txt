@@ -48,7 +48,14 @@ target_sources(
   impl/plugin/bliss/bliss.h 
 
   impl/plugin/prac/prac.cpp 
-  impl/plugin/prac/prac.h 
+  impl/plugin/prac/prac.h
+
+  plugins/encryption/aes_encryption_plugin.h
+  plugins/encryption/impl/aes_encryption_plugin.cpp
+  plugins/encryption/aes_engine.h
+  plugins/encryption/impl/aes_engine.cpp
+  plugins/encryption/aes_config.h
+  plugins/encryption/impl/aes_config.cpp
 )
 
 target_link_libraries(

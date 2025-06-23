@@ -5,6 +5,8 @@
 #include <vector>
 #include <cstdint>
 
+#include "base/type.h"
+
 namespace Ramulator {
     constexpr int AES_BLOCK_SIZE = 16; //(128 bits)
     constexpr int AES_KEY_SIZE_128 = 16;

@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+#include "aes_engine.h"
+
 namespace Ramulator {
     class AESConfig {
     public:
