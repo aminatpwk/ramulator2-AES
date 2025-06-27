@@ -7,7 +7,6 @@
 
 namespace Ramulator {
     class IControllerPlugin;
-
     std::unique_ptr<IControllerPlugin> create_aes_engine_plugin();
 }
 #endif

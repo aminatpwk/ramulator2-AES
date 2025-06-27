@@ -75,7 +75,6 @@ namespace Ramulator {
         }
 
         void dumpStatistics() const;
-        // bool selfTest();
     };
 }
 #endif

@@ -1,5 +1,6 @@
 #include "../aes_engine.h"
 #include <cstring>
+#include <iostream>
 
 namespace Ramulator {
     const uint8_t AESEngine::S_BOX[256] = {
@@ -228,6 +229,26 @@ namespace Ramulator {
         }
     }
 
+    void AESEngine::handleWrite(Addr_t addr) {
+        uint64_t offset = addr &0x3F;
+        uint64_t column = (addr >> 6) & 0xFF;
+        uint64_t bank = (addr >> 14) & 0xF;
+        uint64_t row = (addr >> 18) & 0x3FFF;
+
+        std::cout << "AES Encrypting addr 0x" << std::hex << addr << std::dec
+                  << "Row: "<< row << ", Bank: " << bank << ", Column" << column << ",Offset"<< offset << std::endl;
+    }
+
+    void AESEngine::handleRead(Addr_t addr) {
+        uint64_t offset = addr &0x3F;
+        uint64_t column = (addr >> 6) & 0xFF;
+        uint64_t bank = (addr >> 14) & 0xF;
+        uint64_t row = (addr >> 18) & 0x3FFF;
+
+        std::cout << "AES Decrypting addr 0x" << std::hex << addr << std::dec
+                  << "Row: "<< row << ", Bank: " << bank << ", Column" << column << ",Offset"<< offset << std::endl;
+    }
+
     uint8_t AESEngine::gf_mul(uint8_t a, uint8_t b) {
         uint8_t result = 0;
         uint8_t high_bit;
@@ -316,7 +337,6 @@ namespace Ramulator {
         if (!m_initialized) return 0;
         return m_params.Nk * 4;
     }
-
 
 }
 

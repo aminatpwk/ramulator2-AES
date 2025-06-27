@@ -12,28 +12,47 @@ namespace Ramulator {
     bool AESConfig::loadFromFile(const std::string& config_file, EncryptionSettings& settings) {
         std::ifstream file(config_file);
         if (!file.is_open()) {
-            std::cerr << "AESConfig: Failed to open config file: " << config_file << std::endl;
+            std::cerr << "Failed to open: " << config_file << std::endl;
             return false;
         }
 
         std::string line;
         while (std::getline(file, line)) {
+            line.erase(std::remove_if(line.begin(), line.end(), ::isspace), line.end());
+
             if (line.find("key=") == 0) {
                 std::string key_hex = line.substr(4);
-                settings.key.clear();
-                settings.key.reserve(key_hex.length() / 2);
-
-                for (size_t i = 0; i < key_hex.length(); i += 2) {
-                    std::string byte_str = key_hex.substr(i, 2);
-                    uint8_t byte = static_cast<uint8_t>(std::stoul(byte_str, nullptr, 16));
-                    settings.key.push_back(byte);
+                if (key_hex.empty()) {
+                    std::cerr << "Empty key in config" << std::endl;
+                    continue;
                 }
-            }else if (line.find("encrypt_write="==0)) {
-                settings.encrypt_writes = (line.substr(15)=="true");
+
+                try {
+                    settings.key.clear();
+                    for (size_t i = 0; i < key_hex.length(); i += 2) {
+                        std::string byte_str = key_hex.substr(i, 2);
+                        uint8_t byte = static_cast<uint8_t>(std::stoul(byte_str, nullptr, 16));
+                        settings.key.push_back(byte);
+                    }
+                } catch (...) {
+                    std::cerr << "Invalid hex in key: " << key_hex << std::endl;
+                    return false;
+                }
+            }
+            else if (line.find("encrypt_write=") == 0) {
+                settings.encrypt_writes = (line.substr(14) == "true");
+            }
+            else if (line.find("decrypt_read=") == 0) {
+                settings.decrypt_reads = (line.substr(13) == "true");
             }
         }
 
-        return validateKey(settings.key);
+        if (settings.key.empty()) {
+            std::cerr << "No valid key found in config" << std::endl;
+            return false;
+        }
+
+        return true;
     }
 
     bool AESConfig::validateKey(const std::vector<uint8_t>& key) {

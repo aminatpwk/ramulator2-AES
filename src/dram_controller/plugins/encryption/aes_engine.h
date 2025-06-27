@@ -4,26 +4,25 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-
 #include "base/type.h"
 
 namespace Ramulator {
-    constexpr int AES_BLOCK_SIZE = 16; //(128 bits)
+    constexpr int AES_BLOCK_SIZE = 16;
     constexpr int AES_KEY_SIZE_128 = 16;
     constexpr int AES_KEY_SIZE_192 = 24;
     constexpr int AES_KEY_SIZE_256 = 32;
 
     struct AESParameters {
-        int Nk; //number of 32-bit words in key
-        int Nr; //number of rounds
-        int Nb = 4; //number of columns in a state
+        int Nk;
+        int Nr;
+        int Nb = 4;
     };
 
     class AESEngine {
     private:
         static const uint8_t S_BOX[256];
         static const uint8_t INV_S_BOX[256];
-        static const uint8_t RCON[11]; //round constants for key expansion
+        static const uint8_t RCON[11];
 
         AESParameters m_params;
         std::vector<uint32_t> m_expanded_keys;
@@ -47,9 +46,6 @@ namespace Ramulator {
         void stateToBytes(const uint8_t state[4][4], uint8_t* output);
         uint32_t bytesToWord(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3);
 
-        void handleWrite(Addr_t addr);
-        void handleRead(Addr_t addr);
-
     public:
         AESEngine();
         ~AESEngine() = default;
@@ -72,6 +68,10 @@ namespace Ramulator {
         int getRounds() const {
             return m_params.Nr;
         }
+
+        void handleWrite(Addr_t addr);
+        void handleRead(Addr_t addr);
+
     };
 }
 #endif

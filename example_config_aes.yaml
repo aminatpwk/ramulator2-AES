@@ -1,12 +1,7 @@
 Frontend:
-  impl: SimpleO3
-  clock_ratio: 8
-  num_expected_insts: 500000
-  traces:
-    - example_inst.trace
-  Translation:
-    impl: RandomTranslation
-    max_addr: 2147483648
+  impl: LoadStoreTrace
+  clock_ratio: 4
+  path: aestest.trace
 
 MemorySystem:
   impl: GenericDRAM
@@ -33,9 +28,7 @@ MemorySystem:
     plugins:
       - ControllerPlugin:
           impl: AESEncryption
-#          key: "00112233445566778899AABBCCDDEEFF"
-#          encrypt_on_write: true
-#          decrypt_on_read: true
+          config_file: "aes_config.txt"
 
   AddrMapper:
     impl: RoBaRaCoCh
