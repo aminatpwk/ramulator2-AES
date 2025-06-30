@@ -19,7 +19,7 @@ MemorySystem:
   Controller:
     impl: Generic
     Scheduler:
-      impl: FRFCFS
+      impl: FRF
     RefreshManager:
       impl: AllBank
     RowPolicy:

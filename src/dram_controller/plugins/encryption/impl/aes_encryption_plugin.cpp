@@ -248,7 +248,7 @@ namespace Ramulator {
                 double tCk_ns = 1.833;
                 uint64_t dram_cycles = static_cast<uint64_t>(nanoTime / tCk_ns);
                 m_decryption_cycles = dram_cycles;
-                m_encrypt_operations += blocks;
+                m_decrypt_operations += blocks;
                 return true;
             }
 

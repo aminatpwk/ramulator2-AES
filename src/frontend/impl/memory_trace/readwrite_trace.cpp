@@ -1,6 +1,8 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
 
 #include "frontend/frontend.h"
 #include "base/exception.h"
@@ -32,16 +34,19 @@ class ReadWriteTrace : public IFrontEnd, public Implementation {
       m_logger = Logging::create_logger("ReadWriteTrace");
       m_logger->info("Loading trace file {} ...", trace_path_str);
       init_trace(trace_path_str);
-      m_logger->info("Loaded {} lines.", m_trace.size());      
+      m_logger->info("Loaded {} lines.", m_trace.size());
     };
 
+  void tick() override {
+    const Trace& t = m_trace[m_curr_trace_idx];
 
-    void tick() override {
-      const Trace& t = m_trace[m_curr_trace_idx];
-      m_memory_system->send({t.addr_vec, t.is_write ? Request::Type::Write : Request::Type::Read});
-      m_curr_trace_idx = (m_curr_trace_idx + 1) % m_trace_length;
-    };
+    // Create a Request object explicitly to set source_id
+    Request req(t.addr_vec, t.is_write ? Request::Type::Write : Request::Type::Read);
+    req.source_id = -1;  // Unique identifier for trace requests
 
+    m_memory_system->send(req);
+    m_curr_trace_idx = (m_curr_trace_idx + 1) % m_trace_length;
+  }
 
   private:
     void init_trace(const std::string& file_path_str) {
@@ -55,45 +60,87 @@ class ReadWriteTrace : public IFrontEnd, public Implementation {
         throw ConfigurationError("Trace {} cannot be opened!", file_path_str);
       }
 
-      std::string line;
-      while (std::getline(trace_file, line)) {
-        std::vector<std::string> tokens;
-        tokenize(tokens, line, " ");
+      std::cout << std::unitbuf; // Disable buffering for debug output
 
-        // TODO: Add line number here for better error messages
+      std::string line;
+      size_t line_num = 0;
+      while (std::getline(trace_file, line)) {
+        ++line_num;
+        if (line.empty() || std::all_of(line.begin(), line.end(), isspace)) {
+          std::cout << "Line " << line_num << ": Skipping empty line" << std::endl;
+          continue;
+        }
+        std::cout << "Line " << line_num << ": '" << line << "'" << std::endl;
+
+        std::vector<std::string> tokens;
+        std::cout << "Tokenizing line..." << std::endl;
+        tokenize(tokens, line, " ");
+        std::cout << "Tokens size: " << tokens.size() << std::endl;
+
         if (tokens.size() != 2) {
-          throw ConfigurationError("Trace {} format invalid!", file_path_str);
+          throw ConfigurationError("Trace {} format invalid at line {}: expected 2 tokens, got {}!", file_path_str, line_num, tokens.size());
         }
 
-        bool is_write = false; 
+        std::cout << "Token[0]: '" << tokens[0] << "', Token[1]: '" << tokens[1] << "'" << std::endl;
+
+        bool is_write = false;
         if (tokens[0] == "R") {
           is_write = false;
         } else if (tokens[0] == "W") {
           is_write = true;
         } else {
-          throw ConfigurationError("Trace {} format invalid!", file_path_str);
+          throw ConfigurationError("Trace {} format invalid at line {}: invalid operation '{}'", file_path_str, line_num, tokens[0]);
+        }
+
+        if (tokens[1].empty()) {
+          throw ConfigurationError("Trace {} format invalid at line {}: empty address field!", file_path_str, line_num);
         }
 
         std::vector<std::string> addr_vec_tokens;
+        std::cout << "Tokenizing address field: '" << tokens[1] << "'" << std::endl;
         tokenize(addr_vec_tokens, tokens[1], ",");
+        std::cout << "Address tokens: ";
+        for (const auto& t : addr_vec_tokens) {
+          std::cout << "'" << t << "' ";
+        }
+        std::cout << std::endl;
+
+        if (addr_vec_tokens.empty()) {
+          throw ConfigurationError("Trace {} format invalid at line {}: no address tokens found!", file_path_str, line_num);
+        }
 
         AddrVec_t addr_vec;
         for (const auto& token : addr_vec_tokens) {
-          addr_vec.push_back(std::stoll(token));
+          if (token.empty()) {
+            throw ConfigurationError("Trace {} format invalid at line {}: empty address token!", file_path_str, line_num);
+          }
+          std::cout << "Parsing token: '" << token << "'" << std::endl;
+          std::string clean_token = token;
+          int base = 10;
+          if (clean_token.size() >= 2 && clean_token.substr(0, 2) == "0x") {
+            clean_token = clean_token.substr(2);
+            base = 16;
+          }
+          try {
+            addr_vec.push_back(std::stoll(clean_token, nullptr, base));
+          } catch (const std::invalid_argument& e) {
+            throw ConfigurationError("Trace {} format invalid at line {}: invalid address '{}'", file_path_str, line_num, token);
+          } catch (const std::out_of_range& e) {
+            throw ConfigurationError("Trace {} format invalid at line {}: address out of range '{}'", file_path_str, line_num, token);
+          }
         }
 
         m_trace.push_back({is_write, addr_vec});
       }
 
       trace_file.close();
-
       m_trace_length = m_trace.size();
     };
 
     // TODO: FIXME
     bool is_finished() override {
-      return true; 
-    };    
+      return true;
+    };
 };
 
-}        // namespace Ramulator
+} // namespace Ramulator
