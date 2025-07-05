@@ -1,384 +1,183 @@
-# Ramulator V2.0a
+# AES Encryption Plugin for Ramulator 2.0
+
 ## Introduction
-Ramulator 2.0 is a modern, modular, and extensible cycle-accurate DRAM simulator. It is the successor of Ramulator 1.0 [Kim+, CAL'16], achieving both fast simulation speed and ease of extension. The goal of Ramulator 2.0 is to enable rapid and agile implementation and evaluation of design changes in the memory controller and DRAM to meet the increasing research effort in improving the performance, security, and reliability of memory systems. Ramulator 2.0 abstracts and models key components in a DRAM-based memory system and their interactions into shared interfaces and independent implementations, enabling easy modification and extension of the modeled functions of the memory controller and DRAM. 
 
-This Github repository contains the public version of Ramulator 2.0. From time to time, we will synchronize improvements of the code framework, additional functionalities, bug fixes, etc. from our internal version. Ramulator 2.0 is in its early stage and welcomes your contribution as well as new ideas and implementations in the memory system!
+The AES Encryption Plugin is an extension to [Ramulator 2.0](https://github.com/CMU-SAFARI/ramulator2), a modern, modular, and extensible cycle-accurate DRAM simulator. This plugin integrates the Advanced Encryption Standard (AES) into the memory controller of Ramulator 2.0 to enhance the security of DRAM-based memory systems against hardware attacks such as Rowhammer and Cold Boot. The plugin includes a custom scheduler designed to optimize performance by reducing encryption overhead, achieving a significant reduction in encryption cycles (~40% optimisation).
 
-Currently, Ramulator 2.0 provides the DRAM models for the following standards:
-- DDR3, DDR4, DDR5
-- LPDDR5
-- GDDR6
-- HBM(2), HBM3
+This plugin is developed as part of the thesis work titled *"Zbatimi i Enkriptimit si Strategji Arkitekturore për Mbrojtjen e Sistemeve të Memories"* by Amina Sokoli, under the supervision of Dr. Ina Papadhopulli at the Polytechnic University of Tirana.
 
-Ramulator 2.0 also provides implementations for the following RowHammer mitigation techniques:
-- PARA [[Kim+, ISCA'14]](https://people.inf.ethz.ch/omutlu/pub/dram-row-hammer_isca14.pdf)
-- TWiCe [[Lee+, ISCA'19]](https://ieeexplore.ieee.org/document/8980327)
-- Graphene [[Park+, MICRO'20]](https://microarch.org/micro53/papers/738300a001.pdf)
-- BlockHammer [[Yağlıkçı+, HPCA'21]](https://people.inf.ethz.ch/omutlu/pub/BlockHammer_preventing-DRAM-rowhammer-at-low-cost_hpca21.pdf)
-- Hydra [[Qureshi+, ISCA'22]](https://memlab.ece.gatech.edu/papers/ISCA_2022_1.pdf)
-- Randomized Row Swap (RRS) [[Saileshwar+, ASPLOS'22]](https://gururaj-s.github.io/assets/pdf/ASPLOS22_Saileshwar.pdf)
-- AQUA [[Saxena+, MICRO'22]](https://memlab.ece.gatech.edu/papers/MICRO_2022_1.pdf)
-- An "Oracle" Refresh Mitigation [[Kim+, ISCA'20]](https://people.inf.ethz.ch/omutlu/pub/Revisiting-RowHammer_isca20-FINAL-DO-NOT_DISTRIBUTE.pdf)
+The plugin leverages Ramulator 2.0’s modular architecture, extending its memory controller interface to incorporate AES encryption and a performance-optimized scheduler. It is implemented in C++ and tested on Ubuntu/WSL using the Ramulator 2.0 simulation environment.
 
-A quick glance at Ramulator 2.0's other key features:
-- Modular and extensible software architecture: Ramulator 2.0 provides an explicit separation of implementations from interfaces. Therefore new ideas can be implemented without intrusive changes.
-- Self-registering factory for interface and implementation classes: Ramulator 2.0 automatically constructs the correct class of objects by their names as you specify in the configuration. Do *not* worry about boilerplate code!
-- YAML-based configuration file: Ramulator 2.0 is configured via human-readable and machine-friendly configuration files. Sweeping parameters is as easy as editing a Python dictionary!
+If you use this plugin in your work, please cite the following:
 
-The initial release of Ramulator 2.0 is described in the following [paper](https://people.inf.ethz.ch/omutlu/pub/Ramulator2_arxiv23.pdf):
-> Haocong Luo, Yahya Can Tugrul, F. Nisa Bostancı, Ataberk Olgun, A. Giray Yaglıkcı, and Onur Mutlu,
-> "Ramulator 2.0: A Modern, Modular, and Extensible DRAM Simulator,"
-> arXiv, 2023.
-
-If you use Ramulator 2.0 in your work, please use the following citation:
 ```
-@misc{luo2023ramulator2,
-  title={{Ramulator 2.0: A Modern, Modular, and Extensible DRAM Simulator}}, 
-  author={Haocong Luo and Yahya Can Tu\u{g}rul and F. Nisa Bostancı and Ataberk Olgun and A. Giray Ya\u{g}l{\i}k\c{c}{\i} and and Onur Mutlu},
-  year={2023},
-  archivePrefix={arXiv},
-  primaryClass={cs.AR}
+@misc{aminatpwkramulator2aes,
+  title={{AES Encryption Plugin for Ramulator 2.0: An Architectural Strategy for Memory System Security}},
+  author={Amina Sokoli},
+  year={2025},
+  note={Thesis, Polytechnic University of Tirana}
 }
 ```
 
-## Using Ramulator 2.0
-### Dependencies
-Ramulator uses some C++20 features to achieve both high runtime performance and modularity and extensibility. Therefore, a C++20-capable compiler is needed to build Ramulator 2.0. We have tested and verified Ramulator 2.0 with the following compilers:
-- `g++-12`
-- `clang++-15`
+## Features
 
-Ramulator 2.0 uses the following external libraries. The build system (CMake) will automatically download and configure these dependencies.
-- [argparse](https://github.com/p-ranav/argparse)
-- [spdlog](https://github.com/gabime/spdlog)
-- [yaml-cpp](https://github.com/jbeder/yaml-cpp)
-### Getting Started
-Clone the repository
-```bash
-  $ git clone https://github.com/CMU-SAFARI/ramulator2
-```
-Configure the project and build the executable
-```bash
-  $ mkdir build
-  $ cd build
-  $ cmake ..
-  $ make -j
-  $ cp ./ramulator2 ../ramulator2
-  $ cd ..
-```
-This should produce a `ramulator2` executable that you can execute standalone and a `libramulator.so` dynamic library that can be used as a memory system library by other simulators.
-### Running Ramulator 2.0 in Standalone Mode
-Ramulator 2.0 comes with two independent simulation frontends: A memory-trace parser and a simplistic out-of-order core model that can accept instruction traces. To start a simulation with these frontends, just run the Ramulator 2.0 executable with the path to the configuration file specified through the `-f` argument
-```bash
-  $ ./ramulator2 -f ./example_config.yaml
-```
-To support easy automation of experiments (e.g., evaluate many different traces and sweep parameters), Ramulator 2.0 can accept the configurations as a string dump of the YAML document, which is usually produced by a scripting language that can easily parse and manipulate YAML documents (e.g., `python`). We provide an example `python` snippet to demonstrate an experiment of sweeping the `nRCD` timing constraint:
-```python
-import os
-import yaml  # YAML parsing provided with the PyYAML package
+- **AES Encryption Integration**: Implements AES encryption at the memory controller level to protect data against hardware-based attacks like Rowhammer and Cold Boot.
+- **Custom Scheduler**: Includes a performance-optimized scheduler that reduces encryption overhead by ~40% (from ~750 to ~450 cycles per operation).
+- **Modular Design**: Built using Ramulator 2.0’s extensible interface and implementation framework, allowing seamless integration and easy modification.
+- **YAML Configuration**: Configurable via a human-readable YAML file (`example_config_aes.yaml`) for specifying encryption parameters and scheduler settings.
+- **Tested Workloads**: Evaluated using memory traces (e.g., `aestest.trace`) to demonstrate performance improvements in simulated environments.
 
-baseline_config_file = "./example_config.yaml"
-nRCD_list = [10, 15, 20, 25]
+## Dependencies
 
-base_config = None
-with open(base_config_file, 'r') as f:
-  base_config = yaml.safe_load(f)
+The AES Encryption Plugin requires the following dependencies, which are automatically handled by Ramulator 2.0’s build system (CMake):
 
-for nRCD in nRCD_list:
-  config["MemorySystem"]["DRAM"]["timing"]["nRCD"] = nRCD
-  cmds = ["./ramulator2", str(config)]
-  # Run the command with e.g., os.system(), subprocess.run(), ...
-```
-### Using Ramulator 2.0 as a Library (gem5 Example)
-Ramulator 2.0 packs all the interfaces and implementations into a dynamic library (`libramulator.so`). This can be used as a memory system library providing extensible cycle-accurate DRAM simulation to another simulator. We use gem5 as an example to show how to use Ramulator 2.0 as a library. We have tested and verified the integration of Ramulator 2.0 into gem5 as a library.
+- **Ramulator 2.0**: The base simulator, available at [CMU-SAFARI/ramulator2](https://github.com/CMU-SAFARI/ramulator2).
+- **C++20 Compiler**: Tested with `g++-12` and `clang++-15`.
+- **External Libraries**: `argparse`, `spdlog`, `yaml-cpp` (automatically downloaded by CMake).
 
-1. Clone Ramulator 2.0 into `gem5/ext/ramulator2/` directory.
-2. Build Ramulator 2.0. You should have `libramulator.so` at `gem5/ext/ramulator2/ramulator2/libramulator.so`
-3. Create a file `SConscript` at `gem5/ext/ramulator2/`, with the following contents to add Ramulator 2.0 to gem5's build system
-```python
-import os
+## Getting Started
 
-Import('env')
+### Prerequisites
 
-if not os.path.exists(Dir('.').srcnode().abspath + '/ramulator2'):
-  env['HAVE_RAMULATOR2'] = False
-  Return()
+Ensure you have a C++20-capable compiler (`g++-12` or `clang++-15`) and CMake installed. The plugin is designed to work on Ubuntu/WSL or compatible Linux environments.
 
-env['HAVE_RAMULATOR2'] = True
-ramulator2_path = os.path.join(Dir('#').abspath, 'ext/ramulator2/ramulator2/')
-env.Prepend(CPPPATH=Dir('.').srcnode())
-env.Append(
-  LIBS=['ramulator'],
-  LIBPATH=[ramulator2_path],
-  RPATH=[ramulator2_path],
-  CPPPATH=[
-  ramulator2_path+'/src/', 
-  ramulator2_path+'/ext/spdlog/include',
-  ramulator2_path+'/ext/yaml-cpp/include'
-])
-```
-4. Put the Ramulator2 wrapper code to `gem5/src/mem/`
-5. Add the code to `gem5/src/mem/SConscript` to register the Ramulator2 SimObjects to gem5 
-```python
-if env['HAVE_RAMULATOR2']:
-  SimObject('Ramulator2.py', sim_objects=['Ramulator2'])
-  Source('ramulator2.cc')
-  DebugFlag("Ramulator2")
-```
-6. Create the Ramulator2 SimObject as the memory controller and specify the path to the Ramulator 2.0 configuration file in your gem5 configuration script, e.g.,
-```python
-import m5
-from m5.objects import *
+### Installation
 
-system = System()
-system.mem_ctrl = Ramulator2()
-system.mem_ctrl.config_path = "<path-to-config>.yaml" # Don't forget to specify GEM5 as the implementation of the frontend interface!
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/aminatpwk/ramulator2-AES
+   cd ramulator2-AES
+   ```
 
-# Continue your configuration of gem5 ...
-```
+3. **Build Ramulator 2.0 with the Plugin**:
+   ```bash
+   mkdir build
+   cd build
+   cmake ..
+   make -j
+   cp ./ramulator2 ../ramulator2
+   cd ..
+   ```
 
-### General Instructions for Writing Your Own Wrapper of Ramulator 2.0 for Another (including Your Own) Simulator
-We describe the key steps and cover the key interfaces involved in using Ramulator 2.0 as a library for your own simulator.
-1. Add Ramulator 2.0's key header files to your build system:
-- `ramulator2/src/base/base.h`
-- `ramulator2/src/base/request.h`
-- `ramulator2/src/base/config.h`
-- `ramulator2/src/frontend/frontend.h`
-- `ramulator2/src/memory_system/memory_system.h`
+   This will produce the `ramulator2` executable and the `libramulator.so` dynamic library, both including the AES Encryption Plugin.
 
-2. Parse the YAML configuration for Ramulator 2.0 and instantiate the interfaces of the two top-level components, e.g.,
-```c++
-// MyWrapper.h
-std::string config_path;
-Ramulator::IFrontEnd* ramulator2_frontend;
-Ramulator::IMemorySystem* ramulator2_memorysystem;
+### Running the Plugin
 
-// MyWrapper.cpp
-YAML::Node config = Ramulator::Config::parse_config_file(config_path, {});
-ramulator2_frontend = Ramulator::Factory::create_frontend(config);
-ramulator2_memorysystem = Ramulator::Factory::create_memory_system(config);
+The plugin can be used in standalone mode with Ramulator 2.0’s memory-trace parser frontend. To run a simulation with the AES Encryption Plugin:
 
-ramulator2_frontend->connect_memory_system(ramulator2_memorysystem);
-ramulator2_memorysystem->connect_frontend(ramulator2_frontend);
-```
-3. Communicate the necessary memory system information from Ramulator 2.0 to your system (e.g., memory system clock):
-```c++
-float memory_tCK = ramulator2_memorysystem->get_tCK();
-```
-4. Send the memory requests from your simulator to Ramulator 2.0, with the correspoding callbacks that should be executed when the request is "completed" by Ramulator 2.0, e.g.,
-```c++
-if (is_read_request) {
-  enqueue_success = ramulator2_frontend->
-    receive_external_requests(0, memory_address, context_id, 
-    [this](Ramulator::Request& req) {
-      // your read request callback 
-    });
+1. **Prepare the Configuration File**:
+   - Use the provided `example_config_aes.yaml` file to configure the plugin. A sample configuration snippet:
+     ```yaml
+     MemorySystem:
+       DRAM:
+         standard: DDR4
+         timing:
+           nRCD: 15
+       Controller:
+         impl: AESEncryption
+         scheduler: FRFCFS
+     ```
 
-  if (enqueue_success) {
-    // What happens if the memory request is accepted by Ramulator 2.0
-  } else {
-    // What happens if the memory request is rejected by Ramulator 2.0 (e.g., request queue full)
-  }
-}
-```
-5. Find a proper time and place to call the epilogue functions of Ramulator 2.0 when your simulator has finished execution, e.g.,
-```c++
-void my_simulator_finish() {
-  ramulator2_frontend->finalize();
-  ramulator2_memorysystem->finalize();
-}
-```
+2. **Run the Simulation**:
+   ```bash
+   ./ramulator2 -f ./example_config_aes.yaml
+   ```
 
-## Extending Ramulator 2.0
 ### Directory Structure
-Ramulator 2.0 
+
 ```
-ext                     # External libraries
-src                     # Source code of Ramulator 2.0
-└ <component1>          # Collection of the source code of all interfaces and implementations related to the component
-  └ impl                # Collection of the source code of all implementations of the component
-    └ com_impl.cpp      # Source file of a specific implementation
-  └ com_interface.h     # Header file that defines an interface
-  └ CMakeList.txt       # Component-level CMake configuration
-└ ...                    
-└ CMakeList.txt         # Top-level CMake configuration of all Ramulator 2.0's source files
-CMakeList.txt           # Project-level CMake configuration
+ramulator2/
+├── ext/                     # External libraries (argparse, spdlog, yaml-cpp)
+├── src/
+│   ├── dram_controller/
+│   │   ├── plugins/
+│   │   │   ├── aes_encryption.cpp   # AES encryption implementation
+│   │   │   ├── aes_scheduler.cpp    # Custom scheduler implementation
+│   │   ├── aes_encryption.h        # AES encryption interface
+│   │   ├── CMakeLists.txt           # Component-level CMake configuration
+│   ├── ...
+├── example_config_aes.yaml          # Sample configuration file
+├── aestest.trace                    # Sample memory trace for testing
+├── CMakeLists.txt                   # Project-level CMake configuration
 ```
 
-### Interface and Implementation
-To achieve high modularity and extensibility, Ramulator 2.0 models the components in the memory system using two concepts, Interfaces and Implementations:
-- An interface is a high-level abstraction of the common high-level functionality of a component as seen by other components in the system. It is an abstract C++ class defined in a `.h` header file, that provides its functionalities through virtual functions.
-- An implementation is a concrete realization of an interface that models the actual behavior of the object. It is usually a C++ class that inherits from the interface class it is implementing that provides implementations of the interface's virtual functions.
+## Extending the Plugin
 
-An example interface class looks like this:
-```c++
-// example_interface.h
-#ifndef     RAMULATOR_EXAMPLE_INTERFACE_H
-#define     RAMULATOR_EXAMPLE_INTERFACE_H
+The AES Encryption Plugin follows Ramulator 2.0’s modular design, using interfaces and implementations for extensibility.
 
-// Defines fundamental data structures and types of Ramulator 2.0. Must include for all interfaces.
-#include "base/base.h"  
+### Adding a New Implementation
 
-namespace Ramulator {
-class ExampleIfce {
-  // One-liner macro to register this "ExampleIfce" interface with the name "ExampleInterface" to Ramulator 2.0.
-  RAMULATOR_REGISTER_INTERFACE(ExampleIfce, "ExampleInterface", "An example of an interface class.")
-  public:
-    // Model common behaviors of the interface with virtual functions 
-    virtual void foo() = 0;
-};
-}        // namespace Ramulator
+To add a new encryption algorithm or scheduler:
 
-#endif   // RAMULATOR_EXAMPLE_INTERFACE_H
-```
+1. Create a new `.cpp` file in `src/dram_controller/plugins/` (e.g., `new_encryption.cpp`).
+2. Define the implementation class, inheriting from the `AESEncryption` interface and `Implementation` base class:
+   ```cpp
+   #include "aes_encryption.h"
+   #include "base/base.h"
 
-An example implementation that implements the above interface looks like this
-```c++
-// example_impl.cpp
-#include <iostream>
+   namespace Ramulator {
+   class NewEncryption : public IAESEncryptionPlugin, public Implementation {
+     RAMULATOR_REGISTER_IMPLEMENTATION(IAESEncryptionPlugin, NewEncryption, "NewEncryption", "A new encryption implementation.")
+   public:
+     void encrypt_data(uint8_t* data, size_t size) override {
+       // Implement new encryption logic
+     }
+   };
+   }  // namespace Ramulator
+   ```
+3. Update `src/dram_controller/CMakeLists.txt` to include the new file:
+   ```cmake
+   target_sources(ramulator PRIVATE plugins/new_encryption.cpp)
+   ```
+4. Specify the new implementation in the YAML configuration:
+   ```yaml
+   MemorySystem:
+     Controller:
+       impl: NewEncryption
+   ```
 
-// An implementation should always include the header of the interface that it is implementating
-#include "example_interface.h"
+### Adding a New Interface
 
-namespace Ramulator {
-// An implementation class should always inherit from *both* the interface it is implementating, and the "Implementation" base class
-class ExampleImpl : public ExampleIfce, public Implementation  {
-  // One-liner macro to register and bind this "ExampleImpl" implementation with the name "ExampleImplementation" to the "ExampleIfce" interface.
-  RAMULATOR_REGISTER_IMPLEMENTATION(ExampleIfce, ExampleImpl, "ExampleImplementation", "An example of an implementation class.")
-  public:
-    // Implements concrete behavior
-    virtual void foo() override {
-      std::cout << "Bar!" << std::endl;
-    };
-};
-}      // namespace Ramulator
-```
+To add a new component (e.g., a new security interface):
 
-### Adding an Implementation to an Existing Interface
-Let us consider an example of adding an implementation "MyImpl" for the interface "MyIfce", defined in `my_ifce.h`, that belongs to a component "my_comp".
-1. Create a new `.cpp` file under `my_comp/impl/` that contains the source code for the implementation. Say this file is "my_impl.cpp". The directory structure for `my_comp` will look like this:
-```
-my_comp                     
-  └ impl
-    └ my_impl.cpp      
-  └ my_interface.h     
-  └ CMakeList.txt       
-```
-2. Provide the concrete class definition for `MyImpl` in `my_impl.cpp`, following the structure explained above. It is important to do the following two things when defining your class:
-    * Make sure you inherit from *both* the interface class that you are implementing and the `Implementation` base class
-    * Make sure to include the macro `RAMULATOR_REGISTER_IMPLEMENTATION(...)` *inside* your implementation class definition. You should always specify which interface class your class is implementing and the stringified name of your implementation class in the macro.
-Assume you have the following registration macro for the interface class
-```c++
-class MyIfce {
-  RAMULATOR_REGISTER_INTERFACE(MyIfce, "MyInterfaceName", "An example of my interface class.")
-}
-```
-and the following for the implementation class
-```c++
-class MyImpl : public MyIfce, public Implementation {
-  RAMULATOR_REGISTER_IMPLEMENTATION(MyIfce, MyImpl, "MyImplName", "An example of my implementation class.")
-}
-```
-If everything is correct, Ramulator 2.0 will be able to automatically construct a pointer of type `MyIfce*`, pointing to an object of type `MyImpl`, when it sees the following in the YAML configuration file:
-```yaml
-MyInterfaceName:
-  impl: MyImplName
-```
+1. Create a new directory under `src/` (e.g., `src/security_component/`).
+2. Define the interface in a `.h` file (e.g., `security_interface.h`):
+   ```cpp
+   #include "base/base.h"
 
-3. Finally, add `impl/my_impl.cpp` to `target_sources` in `CMakeList.txt` so that CMake knows about the newly added source file.
+   namespace Ramulator {
+   class SecurityIfce {
+     RAMULATOR_REGISTER_INTERFACE(SecurityIfce, "SecurityInterface", "Interface for security components.")
+   public:
+     virtual void secure_data(uint8_t* data, size_t size) = 0;
+   };
+   }  // namespace Ramulator
+   ```
+3. Add the implementation in `src/security_component/impl/` and update the corresponding `CMakeLists.txt`.
+4. Register the new component in `src/CMakeLists.txt`:
+   ```cmake
+   add_subdirectory(security_component)
+   ```
 
-### Adding a New Interface (or New Component)
-The process is similar to that of adding a new implementation, but you will need to create the interface and add them to `CMakeList.txt` under the corresponding component directory. If you add a new component (i.e., create a new directory under `src/`) you will need to add this new directory to the `CMakeList.txt` file under `src/`, i.e.,
-```cmake
-add_subdirectory(my_comp)
-```
-## Verifying Ramulator 2.0's Memory Controller and DRAM Model
-We use the [Verilog model from Micron](https://www.micron.com/products/dram/ddr4-sdram/part-catalog/mt40a2g4trf-093e) to verify that the DRAM commands issued by Ramulator 2.0 do not cause timing or state transition violations.
-1. Generate the instruction traces
-```bash
-cd verilog_verification
-cd traces
-python3 tracegen.py --type SimpleO3 --pattern {stream,random} --num-insts ${NUM_INSTS} --output ${TRACE_FILE} --distance ${MEMREQ_INTENSITY}
-```
-2. Collect the DRAM command trace (with addresses and time stamps) from the simulations
-```bash
-cd ..
-./ramulator2 -f ./verification-config.yaml
-```
-3. Configure the Verilog model to match the configuration used by Ramulator 2.0:
-- DRAM Organization: "DDR4_8G_X8"
-- DRAM Frequency: "DDR4_2400"
-- Number of Ranks: 2
+## Verification
 
-We provide the already configured Verilog files in `verilog_verification/sources/`. 
+The plugin has been verified using Ramulator 2.0’s memory-trace parser with the provided `aestest.trace` file. The implementation achieves a ~40% reduction in encryption cycles (from ~750 to ~450 cycles per operation) with the custom scheduler.
 
-4. Convert the DRAM Command Trace to fit the testbench of the Verilog model. We provide a script `verilog_verification/trace_converter.py` to do so.
-```bash
-python3 trace_converter.py DDR4_8G_X8 2 DDR4_2400
-```
-5.  Then you can just start your Verilog simulator (e.g., ModelSim) and check for violations. We provide a script to parse the simulation output and check for errors `verilog_verification/trace_verifier.py`
-```bash
-python3 trace_verifier.py <trace_filepath> <output_filepath>
-```
+To verify the plugin:
 
-## Reproducing the Results in our Ramulator 2.0 paper
-### Simulation Performance Comparison with Other Simulators
-We put all scripts and configurations in `perf_comparison/`
+1. Run the simulation with the provided trace:
+   ```bash
+   ./ramulator2 -f ./example_config_aes.yaml
+   ```
+2. Compare the output statistics (e.g., encryption cycles, latency) with the baseline configuration to confirm performance improvements.
 
-1. Get simulators from their respective sources and put their source code at `perf_comparison/simulators/`
-```bash
-cd perf_comparison
-mkdir simulators
-cd simulators
-git clone https://github.com/umd-memsys/DRAMSim2.git    # DRAMSim2
-git clone https://github.com/umd-memsys/DRAMsim3        # DRAMSim3
-wget http://www.cs.utah.edu/~rajeev/usimm-v1.3.tar.gz   # USIMM v1.3
-tar xvzf ./usimm-v1.3.tar.gz
-git clone https://github.com/CMU-SAFARI/ramulator.git   # Ramulator 1.0
-mv ramulator ramulatorv1
-git clone https://github.com/CMU-SAFARI/ramulator2.git  # Ramulator 2.0
-mv ramulator2 ramulatorv2
-```
-2. Apply patches to DRAMSim2, DRAMSim3, and USIMM to remove some of their hardcoded system configurations and unify the termination criteria of all simulators for a fair comparison. We do *not* change the core modeling and simulation code of these simulators.
-```bash
-cd DRAMSim2
-git apply ../../DRAMSim2-patch.patch
-cd ..
-cd DRAMsim3
-git apply ../../DRAMsim3-patch.patch
-cd ..
-```
+## Limitations
 
-3. Build all simulators
-```bash
-cd ..
-./build_simulators.sh
-```
-4. Generate traces
-```bash
-cd traces
-./gen_all_traces.sh
-```
-5. Run the simulators with comparable system and DRAM configurations at `perf_comparison/configs/` and record runtimes
-```bash
-python3 perf_comparison.py
-```
-### Cross-Sectional Study of Various RowHammer Mitigation Techniques
-We put all scripts and configurations in `rh_study/`
-1. Get the instruction traces from SPEC 2006 and 2017
-```bash
-cd rh_study
-wget <download_link>  # We host the traces here https://drive.google.com/file/d/1CvAenRZQmmM6s55ptG0-XyeLjhMVovTx/view?usp=drive_link
-tar xvzf ./cputraces.tar.gz
-```
-2. Generate workloads from trace combinations
-```bash
-python3 get_trace_combinations.py
-```
-3. Run the single-core and multi-core simulations (assuming using `slurm`, if not, please change line 68 of `run_singlecore.py` and line 73 of `run_multicore.py` to fit your job scheduler)
-```bash
-python3 run_singlecore.py
-python3 run_multicore.py
-```
-4. Execute the notebook `plot.ipynb` to plot the results
+- The plugin is currently tested in a simulated environment (Ramulator 2.0) and not on real hardware.
+- Performance may vary depending on workload characteristics (e.g., memory-intensive applications).
+- The plugin assumes AES as the primary encryption algorithm; alternative algorithms require additional implementations.
 
 
+## Acknowledgments
+
+This plugin was developed as part of a thesis project at the Polytechnic University of Tirana, under the guidance of Dr. Ina Papadhopulli. We thank the Ramulator 2.0 team for providing an extensible and robust simulation framework.
