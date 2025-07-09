@@ -4,20 +4,8 @@
 
 The AES Encryption Plugin is an extension to [Ramulator 2.0](https://github.com/CMU-SAFARI/ramulator2), a modern, modular, and extensible cycle-accurate DRAM simulator. This plugin integrates the Advanced Encryption Standard (AES) into the memory controller of Ramulator 2.0 to enhance the security of DRAM-based memory systems against hardware attacks such as Rowhammer and Cold Boot. The plugin includes a custom scheduler designed to optimize performance by reducing encryption overhead, achieving a significant reduction in encryption cycles (~40% optimisation).
 
-This plugin is developed as part of the thesis work titled *"Zbatimi i Enkriptimit si Strategji Arkitekturore për Mbrojtjen e Sistemeve të Memories"* by Amina Sokoli, under the supervision of Dr. Ina Papadhopulli at the Polytechnic University of Tirana.
-
 The plugin leverages Ramulator 2.0’s modular architecture, extending its memory controller interface to incorporate AES encryption and a performance-optimized scheduler. It is implemented in C++ and tested on Ubuntu/WSL using the Ramulator 2.0 simulation environment.
 
-If you use this plugin in your work, please cite the following:
-
-```
-@misc{aminatpwkramulator2aes,
-  title={{AES Encryption Plugin for Ramulator 2.0: An Architectural Strategy for Memory System Security}},
-  author={Amina Sokoli},
-  year={2025},
-  note={Thesis, Polytechnic University of Tirana}
-}
-```
 
 ## Features
 
@@ -180,4 +168,4 @@ To verify the plugin:
 
 ## Acknowledgments
 
-This plugin was developed as part of a thesis project at the Polytechnic University of Tirana, under the guidance of Dr. Ina Papadhopulli. We thank the Ramulator 2.0 team for providing an extensible and robust simulation framework.
+This plugin is developed as part of the thesis work titled *"Zbatimi i Enkriptimit si Strategji Arkitekturore për Mbrojtjen e Sistemeve të Memories"* by Amina Sokoli, under the supervision of Dr. Ina Papadhopulli at the Polytechnic University of Tirana. We thank the Ramulator 2.0 team for providing an extensible and robust simulation framework.
