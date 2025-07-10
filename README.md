@@ -168,4 +168,4 @@ To verify the plugin:
 
 ## Acknowledgments
 
-This plugin is developed as part of the thesis work titled *"Zbatimi i Enkriptimit si Strategji Arkitekturore për Mbrojtjen e Sistemeve të Memories"* by Amina Sokoli, under the supervision of Dr. Ina Papadhopulli at the Polytechnic University of Tirana. We thank the Ramulator 2.0 team for providing an extensible and robust simulation framework.
+This plugin is developed as part of the thesis work titled *"Implementing Encryption as an Architectural Approach to Securing Memory Systems"* by Amina Sokoli, under the supervision of Dr. Ina Papadhopulli at the Polytechnic University of Tirana. We thank the Ramulator 2.0 team for providing an extensible and robust simulation framework.
